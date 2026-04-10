@@ -1,12 +1,10 @@
-
-
 from models import db
 from app import create_app
 
 app = create_app()
 
 with app.app_context():
-    # Completely drop all tables
+    # Drop all tables
     db.drop_all()
     print("✅ Dropped all tables")
     
@@ -21,14 +19,13 @@ with app.app_context():
         email='admin@lynqplat.com',
         full_name='Admin User',
         usertag='admin',
-        is_admin=True
+        is_admin=True,
+        company_name='LYNQ',
+        age=30
     )
     admin.set_password('admin123')
     db.session.add(admin)
     db.session.commit()
     
     print("✅ Admin user created!")
-    print("Email: admin@lynqplat.com")
-    print("Password: admin123")
 
-exit()

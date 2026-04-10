@@ -7,19 +7,17 @@ class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    company = db.Column(db.String(200), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    location = db.Column(db.String(200))
-    salary_range = db.Column(db.String(200))  # ✅ Added - allows currency symbols
+    location = db.Column(db.String(255))
+    salary_min = db.Column(db.Float)
+    salary_max = db.Column(db.Float)
     job_type = db.Column(db.String(50))
-    requirements = db.Column(db.Text)
-    status = db.Column(db.String(50), default='active')
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    posted_at = db.Column(db.DateTime, default=datetime.now)
+    deadline = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
     
-    # Relationships
-    company_obj = db.relationship('User', foreign_keys=[company_id])
-    applications = db.relationship('Application', backref='job', lazy=True, cascade='all, delete-orphan')
+    # ✅ Use unique backref name
+    company = db.relationship('User', backref='company_jobs', foreign_keys=[company_id])
     
     def __repr__(self):
         return f'<Job {self.title}>'

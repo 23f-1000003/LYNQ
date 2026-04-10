@@ -1,45 +1,39 @@
-from datetime import datetime
-from models import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
+import time
+from models import db
 
 class User(db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(200), nullable=False)
-    email = db.Column(db.String(200), unique=True, nullable=False)
-    usertag = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(500), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    profile_picture = db.Column(db.String(500))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    full_name = db.Column(db.String(120), nullable=False)
+    usertag = db.Column(db.String(50), unique=True, nullable=False)
     bio = db.Column(db.Text)
+    age = db.Column(db.Integer)
+    company_name = db.Column(db.String(120))
+    cgpa = db.Column(db.Float)
+    is_admin = db.Column(db.Boolean, default=False)
+    profile_picture = db.Column(db.String(255), default='default_profile.png')
     created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
-    # Relationships
-    user_comments = db.relationship('Comment', foreign_keys='Comment.author_id', lazy=True, cascade='all, delete-orphan')
-    applications = db.relationship('Application', foreign_keys='Application.user_id', lazy=True, cascade='all, delete-orphan')
+    # ✅ NO relationships defined here - avoid conflicts
     
     def set_password(self, password):
-        self.password = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password)
     
     def check_password(self, password):
-        return check_password_hash(self.password, password)
-    
-    def __repr__(self):
-        return f'<User {self.usertag}>'
+        return check_password_hash(self.password_hash, password)
     
     def get_profile_picture(self):
-        if self.profile_picture:
-            return self.profile_picture
-        return '/static/default-avatar.png'
+        """Get profile picture URL with cache busting"""
+        if self.profile_picture and self.profile_picture != 'default_profile.png':
+            cache_bust = int(time.time())
+            return f'/static/uploads/profiles/{self.profile_picture}?t={cache_bust}'
+        return f'https://ui-avatars.com/api/?name={self.full_name.replace(" ", "+")}&background=random'
     
-    def get_stats(self):
-        from models.post import Post
-        from models.comment import Comment
-        posts = Post.query.filter_by(author_id=self.id).count()
-        comments = Comment.query.filter_by(author_id=self.id).count()
-        return {
-            'total_posts': posts,
-            'total_comments': comments,
-            'total_applications': len(self.applications)
-        }
+    def __repr__(self):
+        return f'<User {self.email}>'

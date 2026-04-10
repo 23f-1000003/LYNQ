@@ -1,20 +1,25 @@
-from datetime import datetime
 from models import db
+from datetime import datetime
 
 class Post(db.Model):
     __tablename__ = 'posts'
     
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    image_filename = db.Column(db.String(500))
+    image_filename = db.Column(db.String(255))
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    likes_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    likes_count = db.Column(db.Integer, default=0)
     
-    # Relationships - NO BACKREF to avoid conflicts
-    author = db.relationship('User', foreign_keys=[author_id], backref='posts')
-    comments = db.relationship('Comment', foreign_keys='Comment.post_id', lazy=True, cascade='all, delete-orphan')
+    # ✅ Use backref='user_posts' to avoid conflict with User.posts
+    author = db.relationship('User', backref='user_posts', foreign_keys=[author_id])
+    comments = db.relationship('Comment', cascade='all, delete-orphan')
+    likes = db.relationship('PostLike', cascade='all, delete-orphan')
+    
+    def has_user_liked(self, user_id):
+        from models.post_like import PostLike
+        return PostLike.query.filter_by(post_id=self.id, user_id=user_id).first() is not None
     
     def __repr__(self):
         return f'<Post {self.id}>'
