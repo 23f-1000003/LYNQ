@@ -78,26 +78,36 @@ def create_job():
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
-        company = request.form.get('company', '').strip()
         
-        if not title or not description or not company:
-            flash('Title, description, and company are required', 'error')
+        # FIX: Removed 'company' from form (it's stored as company_id in the admin user record)
+        if not title or not description:
+            flash('Title and description are required', 'error')
             return redirect(url_for('jobs.create_job'))
         
-        job = Job(
-            title=title,
-            description=description,
-            company=company,
-            company_id=user.id,
-            salary_range=request.form.get('salary_range', ''),
-            location=request.form.get('location', ''),
-            job_type=request.form.get('job_type', ''),
-            requirements=request.form.get('requirements', '')
-        )
-        db.session.add(job)
-        db.session.commit()
-        flash('Job created successfully!', 'success')
-        return redirect(url_for('jobs.list_jobs'))
+        try:
+            # FIX: Only pass company_id (not company string)
+            job = Job(
+                title=title,
+                description=description,
+                company_id=user.id,  # FIX: Use company_id, not company
+                salary_range=request.form.get('salary_range', '').strip(),
+                location=request.form.get('location', '').strip(),
+                job_type=request.form.get('job_type', '').strip(),
+                requirements=request.form.get('requirements', '').strip()
+            )
+            db.session.add(job)
+            db.session.commit()
+            
+            # FIX: Refresh user to update stats
+            db.session.refresh(user)
+            
+            flash('Job created successfully!', 'success')
+            return redirect(url_for('jobs.list_jobs'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error creating job: {str(e)}")
+            flash(f'Error creating job: {str(e)}', 'error')
+            return redirect(url_for('jobs.create_job'))
     
     return render_template('jobs/create_job.html', user=user)
 
@@ -168,9 +178,13 @@ def apply_job(job_id):
         db.session.add(application)
         db.session.commit()
         
+        # FIX: Refresh user to update stats
+        db.session.refresh(user)
+        
         flash('Application submitted successfully!', 'success')
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error submitting application: {str(e)}")
         flash(f'Error submitting application: {str(e)}', 'error')
     
     return redirect(url_for('jobs.list_jobs'))
@@ -191,25 +205,34 @@ def edit_job(job_id):
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         description = request.form.get('description', '').strip()
-        company = request.form.get('company', '').strip()
         
-        if not title or not description or not company:
-            flash('Title, description, and company are required', 'error')
+        # FIX: Removed 'company' from validation
+        if not title or not description:
+            flash('Title and description are required', 'error')
             return redirect(url_for('jobs.edit_job', job_id=job_id))
         
-        job.title = title
-        job.description = description
-        job.company = company
-        job.salary_range = request.form.get('salary_range', '')
-        job.location = request.form.get('location', '')
-        job.job_type = request.form.get('job_type', '')
-        job.requirements = request.form.get('requirements', '')
-        
-        db.session.commit()
-        flash('Job updated successfully!', 'success')
-        return redirect(url_for('jobs.list_jobs'))
+        try:
+            job.title = title
+            job.description = description
+            job.salary_range = request.form.get('salary_range', '').strip()
+            job.location = request.form.get('location', '').strip()
+            job.job_type = request.form.get('job_type', '').strip()
+            job.requirements = request.form.get('requirements', '').strip()
+            
+            db.session.commit()
+            
+            # FIX: Refresh user to update stats
+            db.session.refresh(user)
+            
+            flash('Job updated successfully!', 'success')
+            return redirect(url_for('jobs.list_jobs'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error updating job: {str(e)}")
+            flash(f'Error updating job: {str(e)}', 'error')
+            return redirect(url_for('jobs.edit_job', job_id=job_id))
     
-    return render_template('jobs/edit_job.html', job=job)
+    return render_template('jobs/edit_job.html', job=job, user=user)
 
 @jobs_bp.route('/<int:job_id>/delete', methods=['POST'])
 def delete_job(job_id):
@@ -227,9 +250,14 @@ def delete_job(job_id):
     try:
         db.session.delete(job)
         db.session.commit()
+        
+        # FIX: Refresh user to update stats
+        db.session.refresh(user)
+        
         flash('Job deleted successfully!', 'success')
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error deleting job: {str(e)}")
         flash(f'Error deleting job: {str(e)}', 'error')
     
     return redirect(url_for('jobs.list_jobs'))
@@ -248,7 +276,7 @@ def job_applications(job_id):
     job = Job.query.get_or_404(job_id)
     applications = Application.query.filter_by(job_id=job_id).order_by(Application.applied_at.desc()).all()
     
-    return render_template('jobs/job_applications.html', job=job, applications=applications)
+    return render_template('jobs/job_applications.html', job=job, applications=applications, user=user)
 
 @jobs_bp.route('/application/<int:app_id>/resume')
 def download_resume(app_id):
@@ -277,6 +305,7 @@ def download_resume(app_id):
         
         return send_file(resume_path, as_attachment=True)
     except Exception as e:
+        print(f"❌ Error downloading resume: {str(e)}")
         flash(f'Error downloading resume: {str(e)}', 'error')
         return redirect(url_for('jobs.job_applications', job_id=application.job_id))
 
@@ -295,7 +324,7 @@ def update_application_status(app_id):
     status = request.form.get('status', '').strip()
     review_notes = request.form.get('review_notes', '').strip()
     
-    if status not in ['pending', 'reviewed', 'accepted', 'rejected']:
+    if status not in ['pending', 'reviewed', 'accepted', 'rejected', 'selected']:
         flash('Invalid status', 'error')
         return redirect(url_for('jobs.job_applications', job_id=application.job_id))
     
@@ -306,9 +335,14 @@ def update_application_status(app_id):
         if status != 'pending':
             application.reviewed_at = datetime.now()
         db.session.commit()
+        
+        # FIX: Refresh user to update stats
+        db.session.refresh(user)
+        
         flash('Application status updated!', 'success')
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error updating status: {str(e)}")
         flash(f'Error updating status: {str(e)}', 'error')
     
     return redirect(url_for('jobs.job_applications', job_id=application.job_id))

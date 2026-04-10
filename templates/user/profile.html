@@ -430,10 +430,8 @@
                     <span class="stat-label">No. of Comments:</span>
                     <span class="stat-value">{{ stats.num_comments or 0 }}</span>
                 </div>
-                <div class="stat-row">
-                    <span class="stat-label">Total Jobs Applied:</span>
-                    <span class="stat-value">{{ stats.total_jobs_applied or 0 }}</span>
-                </div>
+                <!-- FIX: Removed "Total Jobs Applied" for students and "Applications Reviewed" -->
+                <!-- Now showing role-specific stats only -->
                 {% if user.is_admin %}
                     <div class="stat-row">
                         <span class="stat-label">Jobs Created:</span>

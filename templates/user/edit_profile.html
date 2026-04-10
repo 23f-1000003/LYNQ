@@ -1,4 +1,4 @@
-={% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Edit Profile - LYNQ{% endblock %}
 
@@ -337,13 +337,9 @@
     </div>
 
     <form method="POST" enctype="multipart/form-data" id="profileForm">
-        <!-- Hidden inputs -->
-        <input type="file" id="profile_picture_file" name="profile_picture_file_hidden"
+        <!-- FIX: Changed name from "profile_picture_file_hidden" to "profile_picture_file" to match backend -->
+        <input type="file" id="profile_picture_file" name="profile_picture_file"
                accept="image/png,image/jpg,image/jpeg,image/gif,image/webp">
-        <!-- The cropped base64 image is submitted as a hidden field;
-             user_profile.py already handles the file upload path,
-             so we keep the original file input name for compatibility -->
-        <input type="hidden" id="croppedImageData" name="cropped_profile_picture">
 
         <!-- Full Name -->
         <div class="form-group">
@@ -414,11 +410,15 @@
 <script src="https://unpkg.com/cropperjs@1.5.13/dist/cropper.js"></script>
 <script>
     let cropperInstance = null;
+    let originalFile = null; // Store the original file
 
     // Open file picker when file input changes → launch cropper
     document.getElementById('profile_picture_file').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (!file) return;
+
+        // Store original file for later submission
+        originalFile = file;
 
         const reader = new FileReader();
         reader.onload = function (ev) {
@@ -464,19 +464,24 @@
         });
 
         canvas.toBlob(function (blob) {
+            // FIX: Convert blob to File object and update the file input
+            const file = new File([blob], 'profile_picture.jpg', { type: 'image/jpeg' });
+            
+            // Create a new DataTransfer object to set the file
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            
+            // Update the file input with the cropped image
+            document.getElementById('profile_picture_file').files = dataTransfer.files;
+
+            // Update visible preview with base64 for immediate feedback
             const reader = new FileReader();
             reader.onload = function (e) {
-                const dataUrl = e.target.result;
-
-                // Update visible preview
-                document.getElementById('previewImage').src = dataUrl;
-
-                // Store in hidden field so the server receives it
-                document.getElementById('croppedImageData').value = dataUrl;
-
-                closeCropModal();
+                document.getElementById('previewImage').src = e.target.result;
             };
             reader.readAsDataURL(blob);
+
+            closeCropModal();
         }, 'image/jpeg', 0.92);
     }
 

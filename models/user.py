@@ -34,6 +34,15 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     
+    def get_initials(self):
+        """Get user initials from full name"""
+        names = self.full_name.split()
+        if len(names) >= 2:
+            return (names[0][0] + names[-1][0]).upper()
+        elif len(names) == 1:
+            return names[0][0].upper()
+        return "U"
+    
     def get_profile_picture(self):
         """Get profile picture URL with cache busting"""
         if self.profile_picture and self.profile_picture != 'default_profile.png':
@@ -42,14 +51,31 @@ class User(db.Model):
         return f'https://ui-avatars.com/api/?name={self.full_name.replace(" ", "+")}&background=random'
     
     def get_stats(self):
-        """Return a dict of stats for the user's profile page"""
-        return {
-            'total_posts': len(self.user_posts),
-            'total_comments': len(self.user_comments),
-            'total_skills': len(self.user_skills),
-            'total_applications': len(self.user_applications) if not self.is_admin else 0,
-            'total_jobs_posted': len(self.company_jobs) if self.is_admin else 0,
+        """Return a dict of stats for the user's profile page - FIXED with correct keys and conditional logic"""
+        # FIX: Changed keys to match template expectations (num_* and total_* formats)
+        stats = {
+            'num_skills': len(self.user_skills),
+            'num_posts': len(self.user_posts),
+            'num_comments': len(self.user_comments),
         }
+        
+        # Add role-specific stats
+        if self.is_admin:
+            # For admins: show jobs created and applications received
+            stats['total_jobs_created'] = len(self.company_jobs)
+            
+            # Count total applications received for all jobs created by this admin
+            from models.job import Job
+            from models.application import Application
+            total_apps = Application.query.join(Job).filter(Job.company_id == self.id).count()
+            stats['applications_received'] = total_apps
+        else:
+            # For students: show jobs selected (NOT total jobs applied)
+            from models.application import Application
+            jobs_selected = Application.query.filter_by(user_id=self.id, status='selected').count()
+            stats['jobs_selected'] = jobs_selected
+        
+        return stats
     
     def __repr__(self):
         return f'<User {self.email}>'

@@ -9,10 +9,10 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     location = db.Column(db.String(255))
-    salary_min = db.Column(db.Float)
-    salary_max = db.Column(db.Float)
+    salary_range = db.Column(db.String(100))
     job_type = db.Column(db.String(50))
-    posted_at = db.Column(db.DateTime, default=datetime.now)
+    requirements = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now)  # Changed from posted_at
     deadline = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
     
