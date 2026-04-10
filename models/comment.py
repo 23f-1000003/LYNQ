@@ -11,9 +11,9 @@ class Comment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
-    # ✅ Use unique backref names
-    author = db.relationship('User', backref='user_comments', foreign_keys=[author_id])
-    post = db.relationship('Post', foreign_keys=[post_id])
+    # ✅ Use back_populates - NOT backref (user_comments already defined in User model)
+    author = db.relationship('User', back_populates='user_comments', foreign_keys=[author_id])
+    post = db.relationship('Post', back_populates='comments', foreign_keys=[post_id])
     
     def __repr__(self):
         return f'<Comment {self.id}>'

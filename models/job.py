@@ -16,8 +16,9 @@ class Job(db.Model):
     deadline = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
     
-    # ✅ Use unique backref name
-    company = db.relationship('User', backref='company_jobs', foreign_keys=[company_id])
+    # ✅ Use back_populates - NOT backref
+    company = db.relationship('User', back_populates='company_jobs', foreign_keys=[company_id])
+    job_applications = db.relationship('Application', back_populates='job', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Job {self.title}>'

@@ -12,9 +12,9 @@ class Application(db.Model):
     status = db.Column(db.String(50), default='pending')
     applied_at = db.Column(db.DateTime, default=datetime.now)
     
-    # ✅ Use unique backref names
-    user = db.relationship('User', backref='user_applications', foreign_keys=[user_id])
-    job = db.relationship('Job', backref='job_applications', foreign_keys=[job_id])
+    # ✅ Use back_populates - NOT backref
+    user = db.relationship('User', back_populates='user_applications', foreign_keys=[user_id])
+    job = db.relationship('Job', back_populates='job_applications', foreign_keys=[job_id])
     
     def __repr__(self):
         return f'<Application {self.id}>'

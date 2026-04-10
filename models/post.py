@@ -12,10 +12,10 @@ class Post(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     likes_count = db.Column(db.Integer, default=0)
     
-    # ✅ Use backref='user_posts' to avoid conflict with User.posts
-    author = db.relationship('User', backref='user_posts', foreign_keys=[author_id])
-    comments = db.relationship('Comment', cascade='all, delete-orphan')
-    likes = db.relationship('PostLike', cascade='all, delete-orphan')
+    # ✅ Use back_populates - NOT backref
+    author = db.relationship('User', back_populates='user_posts', foreign_keys=[author_id])
+    comments = db.relationship('Comment', back_populates='post', cascade='all, delete-orphan')
+    likes = db.relationship('PostLike', back_populates='post', cascade='all, delete-orphan')
     
     def has_user_liked(self, user_id):
         from models.post_like import PostLike

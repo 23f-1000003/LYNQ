@@ -12,8 +12,8 @@ class Skill(db.Model):
     certificate_file = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.now)
     
-    # ✅ Use backref='user_skills' to avoid conflicts
-    user = db.relationship('User', backref='user_skills', foreign_keys=[user_id])
+    # ✅ Use back_populates - NOT backref
+    user = db.relationship('User', back_populates='user_skills', foreign_keys=[user_id])
     
     def __repr__(self):
         return f'<Skill {self.name}>'
