@@ -5,6 +5,7 @@ from models.skill import Skill
 from models.post import Post
 from models.comment import Comment
 from models.application import Application
+from models.job import Job
 from utils.file_handler import save_profile_picture, save_image, delete_file
 
 # ✅ DEFINE BLUEPRINT FIRST
@@ -31,8 +32,29 @@ def profile():
     
     stats = user.get_stats()
     skills = Skill.query.filter_by(user_id=user.id).all()
-    
-    return render_template('user/profile.html', user=user, stats=stats, skills=skills)
+    recent_posts = Post.query.filter_by(author_id=user.id).order_by(Post.created_at.desc()).limit(5).all()
+
+    if user.is_admin:
+        recent_jobs = Job.query.filter_by(company_id=user.id).order_by(Job.created_at.desc()).limit(5).all()
+        recent_applications = []
+    else:
+        recent_applications = (
+            Application.query
+            .filter_by(user_id=user.id)
+            .order_by(Application.applied_at.desc())
+            .limit(5).all()
+        )
+        recent_jobs = []
+
+    return render_template(
+        'user/profile.html',
+        user=user,
+        stats=stats,
+        skills=skills,
+        recent_posts=recent_posts,
+        recent_jobs=recent_jobs,
+        recent_applications=recent_applications,
+    )
 
 @user_bp.route('/edit', methods=['GET', 'POST'])
 def edit_profile():

@@ -543,6 +543,83 @@
         <a href="{{ url_for('user.add_skill') }}" class="add-skill-btn">+ Add Skill</a>
     </div>
 
+    <!-- Recent Activity Section -->
+    <div class="profile-right" style="margin-top: 2rem;">
+        <div class="profile-section-header">
+            <h3 class="section-title">Recent Activity</h3>
+        </div>
+
+        <!-- Recent Posts -->
+        <div style="margin-bottom: 2rem;">
+            <h4 style="color: #4ECDC4; margin-bottom: 1rem; font-weight: 700;">Posts</h4>
+            {% if recent_posts %}
+                {% for post in recent_posts %}
+                <div class="info-box" style="margin-bottom: 1rem;" id="post-activity-{{ post.id }}">
+                    <p style="margin-bottom: 0.75rem;">{{ post.content[:200] }}{% if post.content|length > 200 %}…{% endif %}</p>
+                    <div style="display: flex; gap: 1.5rem; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
+                        <span>{{ post.created_at.strftime('%Y-%m-%d') }}</span>
+                        <span>
+                            ❤️ <span class="post-likes-count" data-post-id="{{ post.id }}">{{ post.likes_count }}</span> likes
+                        </span>
+                        <span>💬 {{ post.comments|length }} comments</span>
+                        <a href="{{ url_for('community.view_post', post_id=post.id) }}" style="color: #77EB2C; margin-left: auto;">View →</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-skills"><p>No posts yet.</p></div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Job Activity -->
+        {% if user.is_admin %}
+            <div>
+                <h4 style="color: #4ECDC4; margin-bottom: 1rem; font-weight: 700;">Jobs Created</h4>
+                {% if recent_jobs %}
+                    {% for job in recent_jobs %}
+                    <div class="info-box" style="margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.4rem;">{{ job.title }}</h4>
+                        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">
+                            {{ job.location or 'Remote' }} &nbsp;·&nbsp; {{ job.job_type or 'Full-time' }}
+                        </p>
+                        <div style="display: flex; gap: 1.5rem; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
+                            <span>Posted {{ job.created_at.strftime('%Y-%m-%d') }}</span>
+                            <span>{{ job.job_applications|length }} applicant(s)</span>
+                            <span style="color: {% if job.is_active %}#77EB2C{% else %}#e74c3c{% endif %};">
+                                {% if job.is_active %}Active{% else %}Closed{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-skills"><p>No jobs created yet.</p></div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div>
+                <h4 style="color: #4ECDC4; margin-bottom: 1rem; font-weight: 700;">Job Applications</h4>
+                {% if recent_applications %}
+                    {% for app in recent_applications %}
+                    <div class="info-box" style="margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.4rem;">{{ app.job.title }}</h4>
+                        <p style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">
+                            {{ app.job.company.full_name }} &nbsp;·&nbsp; {{ app.job.location or 'Remote' }}
+                        </p>
+                        <div style="display: flex; gap: 1.5rem; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
+                            <span>Applied {{ app.applied_at.strftime('%Y-%m-%d') }}</span>
+                            <span style="color: {% if app.status == 'selected' %}#77EB2C{% elif app.status == 'rejected' %}#e74c3c{% else %}#4ECDC4{% endif %}; font-weight: 700; text-transform: capitalize;">
+                                {{ app.status }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-skills"><p>No job applications yet.</p></div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
     <!-- Certificate Modal -->
     <div id="certificateModal" class="modal">
         <div class="modal-content">
@@ -569,5 +646,19 @@
                 closeCertificateModal();
             }
         });
+
+        // Real-time like count refresh every 15 seconds
+        function refreshLikeCounts() {
+            document.querySelectorAll('.post-likes-count').forEach(function(el) {
+                const postId = el.dataset.postId;
+                fetch('/community/post/' + postId + '/likes_count')
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(data) { if (data && data.likes_count !== undefined) el.textContent = data.likes_count; })
+                    .catch(function() {});
+            });
+        }
+        if (document.querySelectorAll('.post-likes-count').length > 0) {
+            setInterval(refreshLikeCounts, 15000);
+        }
     </script>
 {% endblock %}

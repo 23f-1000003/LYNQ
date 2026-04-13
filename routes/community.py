@@ -295,3 +295,12 @@ def delete_comment(comment_id):
         flash(f'Error deleting comment: {str(e)}', 'error')
     
     return redirect(url_for('community.view_post', post_id=post_id))
+
+@community_bp.route('/post/<int:post_id>/likes_count', methods=['GET'])
+def get_likes_count(post_id):
+    """Return current like and comment counts for a post (used by profile page polling)"""
+    post = Post.query.get_or_404(post_id)
+    return jsonify({
+        'likes_count': post.likes_count,
+        'comments_count': len(post.comments)
+    })

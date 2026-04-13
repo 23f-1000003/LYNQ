@@ -313,7 +313,7 @@
             <div class="job-info">
                 <strong>{{ job.company }}</strong>
                 {% if job.location %} • {{ job.location }}{% endif %}
-                {% if job.applications %} • <strong>{{ job.applications|length }}</strong> application(s){% endif %}
+                {% if job.job_applications %} • <strong>{{ job.job_applications|length }}</strong> application(s){% endif %}
             </div>
         </div>
 
@@ -327,8 +327,8 @@
         {% endwith %}
 
         <!-- Applications List -->
-        {% if job.applications %}
-            {% for app in job.applications %}
+        {% if job.job_applications %}
+            {% for app in job.job_applications %}
                 <div class="applicant-card">
                     <!-- Header -->
                     <div class="applicant-header">
@@ -392,6 +392,7 @@
                                 <option value="reviewed" {% if app.status == 'reviewed' %}selected{% endif %}>Reviewed</option>
                                 <option value="accepted" {% if app.status == 'accepted' %}selected{% endif %}>Accepted</option>
                                 <option value="rejected" {% if app.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="selected" {% if app.status == 'selected' %}selected{% endif %}>Selected</option>
                             </select>
                         </div>
 
