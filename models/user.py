@@ -72,7 +72,7 @@ class User(db.Model):
         else:
             # For students: show jobs selected (NOT total jobs applied)
             from models.application import Application
-            jobs_selected = Application.query.filter_by(user_id=self.id, status='selected').count()
+            jobs_selected = Application.query.filter_by(user_id=self.id, status='accepted').count()
             stats['jobs_selected'] = jobs_selected
         
         return stats

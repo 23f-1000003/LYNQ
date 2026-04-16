@@ -324,7 +324,7 @@ def update_application_status(app_id):
     status = request.form.get('status', '').strip()
     review_notes = request.form.get('review_notes', '').strip()
     
-    if status not in ['pending', 'reviewed', 'accepted', 'rejected', 'selected']:
+    if status not in ['pending', 'reviewed', 'accepted', 'rejected']:
         flash('Invalid status', 'error')
         return redirect(url_for('jobs.job_applications', job_id=application.job_id))
     
